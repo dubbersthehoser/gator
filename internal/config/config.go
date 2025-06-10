@@ -23,6 +23,11 @@ func (c *Config) SetUser(name string) error {
 	return nil
 }
 
+func (c *Config) ClearUser() {
+	c.CurrentUserName = nil;
+	write(*c)
+}
+
 
 func Read() (*Config, error) {
 	configFile, err := getConfigFilePath()
