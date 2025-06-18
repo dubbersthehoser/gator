@@ -17,10 +17,13 @@ INSERT INTO feeds(
 )
 RETURNING *;
 
--- name: GetFeed :one
+-- name: GetFeedByName :one
 SELECT * FROM feeds WHERE name = $1;
 
--- name: GetFeedsByName :many
+-- name: GetFeedByURL :one
+SELECT * FROM feeds WHERE url = $1;
+
+-- name: GetFeedsByUserName :many
 SELECT f.name, f.url 
 FROM feeds f 
 INNER JOIN users u ON f.user_id = u.id 

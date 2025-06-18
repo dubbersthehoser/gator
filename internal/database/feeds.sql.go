@@ -102,12 +102,30 @@ func (q *Queries) GetAllFeeds(ctx context.Context) ([]Feed, error) {
 	return items, nil
 }
 
-const getFeed = `-- name: GetFeed :one
+const getFeedByName = `-- name: GetFeedByName :one
 SELECT id, created_at, updated_at, url, name, user_id FROM feeds WHERE name = $1
 `
 
-func (q *Queries) GetFeed(ctx context.Context, name string) (Feed, error) {
-	row := q.db.QueryRowContext(ctx, getFeed, name)
+func (q *Queries) GetFeedByName(ctx context.Context, name string) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getFeedByName, name)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Url,
+		&i.Name,
+		&i.UserID,
+	)
+	return i, err
+}
+
+const getFeedByURL = `-- name: GetFeedByURL :one
+SELECT id, created_at, updated_at, url, name, user_id FROM feeds WHERE url = $1
+`
+
+func (q *Queries) GetFeedByURL(ctx context.Context, url string) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getFeedByURL, url)
 	var i Feed
 	err := row.Scan(
 		&i.ID,
@@ -131,27 +149,27 @@ func (q *Queries) GetFeedCount(ctx context.Context) (int64, error) {
 	return count, err
 }
 
-const getFeedsByName = `-- name: GetFeedsByName :many
+const getFeedsByUserName = `-- name: GetFeedsByUserName :many
 SELECT f.name, f.url 
 FROM feeds f 
 INNER JOIN users u ON f.user_id = u.id 
 WHERE u.name = $1
 `
 
-type GetFeedsByNameRow struct {
+type GetFeedsByUserNameRow struct {
 	Name string
 	Url  string
 }
 
-func (q *Queries) GetFeedsByName(ctx context.Context, name string) ([]GetFeedsByNameRow, error) {
-	rows, err := q.db.QueryContext(ctx, getFeedsByName, name)
+func (q *Queries) GetFeedsByUserName(ctx context.Context, name string) ([]GetFeedsByUserNameRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedsByUserName, name)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetFeedsByNameRow
+	var items []GetFeedsByUserNameRow
 	for rows.Next() {
-		var i GetFeedsByNameRow
+		var i GetFeedsByUserNameRow
 		if err := rows.Scan(&i.Name, &i.Url); err != nil {
 			return nil, err
 		}

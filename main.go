@@ -53,7 +53,6 @@ func (c *commands) register(name string, f func(*state, command) error) {
 //
 // Command Handlers
 //
-
 // Help Handler 
 func handlerHelp(s *state, cmd command) error {
 	for k, _ := range s.cmds.Map {
@@ -173,6 +172,63 @@ func handlerAgg(s *state, cmd command) error {
 	fmt.Println(rss)
 	return nil
 }
+func handlerFollowing(s *state, cmd command) error {
+	if s.config.CurrentUserName == nil {
+		return fmt.Errorf("CurrentUserName is nil")
+	}
+	currUserName := *s.config.CurrentUserName
+
+	feeds, err := s.db.GetFeedFollowsForUser(context.Background(), currUserName)
+	if err != nil {
+		return err
+	}
+	for _, feed := range feeds {
+		fmt.Printf("%s\n", feed.FeedName)
+	}
+	return nil
+}
+func handlerFollow(s *state, cmd command) error {
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("one argumant need: 'url'")
+	}
+	if s.config.CurrentUserName == nil {
+		return fmt.Errorf("CurrentUserName is nil")
+	}
+
+	feedUrl := cmd.Args[0]
+	currUserName := *s.config.CurrentUserName
+
+	user, err := s.db.GetUser(context.Background(), currUserName)
+	if err != nil {
+		return err
+	}
+
+	feed, err := s.db.GetFeedByURL(context.Background(), feedUrl)
+	if err != nil {
+		return err
+	}
+
+	count, err := s.db.GetFeedFollowsCount(context.Background())
+	if err != nil {
+		return err
+	}
+	
+	pramFeedFollow := database.CreateFeedFollowParams{
+		ID: count,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID: user.ID,
+		FeedID: feed.ID,
+	}
+
+	newFeed, err := s.db.CreateFeedFollow(context.Background(), pramFeedFollow)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("user='%s' feed='%s'\n", currUserName, newFeed.FeedName)
+	return nil
+}
 func handlerAddFeed(s *state, cmd command) error {
 	if len(cmd.Args) != 2 {
 		return fmt.Errorf("two argument needed: 'name url'")
@@ -203,12 +259,35 @@ func handlerAddFeed(s *state, cmd command) error {
 		UserID:    user.ID,
 	}
 
-	_, err = s.db.CreateFeed(context.Background(), pramFeed)
+	feed, err := s.db.CreateFeed(context.Background(), pramFeed)
 	if err != nil {
 		return err
 	}
+
 	fmt.Println("Feed added")
 	fmt.Printf("DEBUG: %v\n", pramFeed)
+
+	//
+	// Make curr user follow feed
+	//
+	count, err := s.db.GetFeedFollowsCount(context.Background())
+	if err != nil {
+		return err
+	}
+
+	pramFeedFollow := database.CreateFeedFollowParams{
+		ID: count,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID: user.ID,
+		FeedID: feed.ID,
+	}
+
+	_, err = s.db.CreateFeedFollow(context.Background(), pramFeedFollow)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -287,6 +366,8 @@ func main() {
 	commands.register("addfeed", handlerAddFeed)
 	commands.register("help", handlerHelp)
 	commands.register("feeds", handlerFeeds)
+	commands.register("follow", handlerFollow)
+	commands.register("following", handlerFollowing)
 	state := state{config: cfg, cmds: commands}
 
 
