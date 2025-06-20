@@ -26,5 +26,5 @@ May change the hole design: remove multiple users, use SQLite, overall simplifyi
 
 # Migration
 
-1. Change database connection string in dbclean.sh e.g. `$DBCONS="postgres://postgres:postgres@localhost:5432/gator"`
+1. Change database connection string in `dbclean.sh` e.g. `$DBCONS="postgres://postgres:postgres@localhost:5432/gator"`
 1. Run migration `bash dbclean.sh`
