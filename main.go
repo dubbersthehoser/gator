@@ -480,6 +480,7 @@ func main() {
 	commands.register("following", middlewareLoggedIn(handlerFollowing))
 	commands.register("unfollow", middlewareLoggedIn(handlerUnfollow))
 	commands.register("browse", middlewareLoggedIn(handlerBrowse))
+
 	state := state{config: cfg, cmds: commands}
 
 
